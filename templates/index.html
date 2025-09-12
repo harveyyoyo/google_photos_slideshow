@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Photos Slideshow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .slide video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn.active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            display: none;
+        }
+
+        .info-panel.show {
+            display: block;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .info-panel p {
+            margin: 5px 0;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            min-width: 250px;
+            display: none;
+        }
+
+        .settings-panel.show {
+            display: block;
+        }
+
+        .settings-panel h3 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .setting-group input,
+        .setting-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .setting-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .account-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .account-panel h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .account-list {
+            margin-bottom: 20px;
+        }
+
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .account-item button {
+            background: #ff4444;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .account-item button:hover {
+            background: #ff6666;
+        }
+
+        .auth-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #555;
+        }
+
+        .auth-code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .auth-url {
+            margin: 10px 0;
+            word-break: break-all;
+            color: #4CAF50;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 1s linear;
+        }
+
+        .btn {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .btn.secondary {
+            background: #666;
+        }
+
+        .btn.secondary:hover {
+            background: #777;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Slideshow Container -->
+        <div class="slideshow-container" id="slideshowContainer" style="display: none;">
+            <div class="info-panel" id="infoPanel">
+                <h3 id="photoTitle">Photo Title</h3>
+                <p id="photoDate">Date</p>
+                <p id="photoDescription">Description</p>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel">
+                <h3>Settings</h3>
+                <div class="setting-group">
+                    <label for="speedSlider">Speed (seconds):</label>
+                    <input type="range" id="speedSlider" min="1" max="30" value="5">
+                    <span id="speedValue">5</span>
+                </div>
+                <div class="setting-group">
+                    <label for="transitionSelect">Transition:</label>
+                    <select id="transitionSelect">
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="shuffleCheckbox"> Shuffle
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="repeatCheckbox" checked> Repeat
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="showInfoCheckbox"> Show Info
+                    </label>
+                </div>
+                <button class="btn" onclick="hideSettings()">Close</button>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="playPauseBtn" onclick="togglePlayPause()">⏸️</button>
+                <button class="control-btn" onclick="previousSlide()">⏮️</button>
+                <button class="control-btn" onclick="nextSlide()">⏭️</button>
+                <button class="control-btn" onclick="showSettings()">⚙️</button>
+                <button class="control-btn" onclick="showInfo()">ℹ️</button>
+                <button class="control-btn" onclick="showAccountPanel()">👤</button>
+            </div>
+        </div>
+
+        <!-- Account Management Panel -->
+        <div class="account-panel" id="accountPanel">
+            <h2>Google Photos Accounts</h2>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading accounts...</p>
+            </div>
+            <div class="account-list" id="accountList"></div>
+            <div class="auth-section" id="authSection" style="display: none;">
+                <h3>Add New Account</h3>
+                <p>Enter this code on your device:</p>
+                <div class="auth-code" id="authCode">- - - - - - - -</div>
+                <p>Or visit this URL:</p>
+                <div class="auth-url" id="authUrl"></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="timeLeft">Time remaining: --:--</p>
+                <button class="btn" onclick="cancelAuth()">Cancel</button>
+            </div>
+            <button class="btn" onclick="startAuth()">Add Account</button>
+            <button class="btn secondary" onclick="hideAccountPanel()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSlide = 0;
+        let slides = [];
+        let isPlaying = true;
+        let slideInterval;
+        let currentAccount = null;
+        let authSessionId = null;
+        let authCheckInterval = null;
+
+        // Settings
+        let settings = {
+            speed: 5,
+            transition: 'fade',
+            shuffle: false,
+            repeat: true,
+            showInfo: false
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccounts();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Speed slider
+            document.getElementById('speedSlider').addEventListener('input', function(e) {
+                settings.speed = parseInt(e.target.value);
+                document.getElementById('speedValue').textContent = settings.speed;
+                if (slideInterval) {
+                    clearInterval(slideInterval);
+                    if (isPlaying) {
+                        startSlideshow();
+                    }
+                }
+            });
+
+            // Transition select
+            document.getElementById('transitionSelect').addEventListener('change', function(e) {
+                settings.transition = e.target.value;
+            });
+
+            // Checkboxes
+            document.getElementById('shuffleCheckbox').addEventListener('change', function(e) {
+                settings.shuffle = e.target.checked;
+                if (settings.shuffle && slides.length > 0) {
+                    shuffleSlides();
+                }
+            });
+
+            document.getElementById('repeatCheckbox').addEventListener('change', function(e) {
+                settings.repeat = e.target.checked;
+            });
+
+            document.getElementById('showInfoCheckbox').addEventListener('change', function(e) {
+                settings.showInfo = e.target.checked;
+                document.getElementById('infoPanel').classList.toggle('show', settings.showInfo);
+            });
+
+            // Keyboard controls
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        togglePlayPause();
+                        break;
+                    case 'ArrowLeft':
+                        previousSlide();
+                        break;
+                    case 'ArrowRight':
+                        nextSlide();
+                        break;
+                    case 'Escape':
+                        hideSettings();
+                        hideAccountPanel();
+                        break;
+                }
+            });
+        }
+
+        async function loadAccounts() {
+            try {
+                const response = await fetch('/api/accounts');
+                const accounts = await response.json();
+                displayAccounts(accounts);
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+                showError('Failed to load accounts');
+            }
+        }
+
+        function displayAccounts(accounts) {
+            const accountList = document.getElementById('accountList');
+            accountList.innerHTML = '';
+
+            if (accounts.length === 0) {
+                accountList.innerHTML = '<p>No accounts found. Add an account to get started.</p>';
+                return;
+            }
+
+            accounts.forEach(account => {
+                const accountItem = document.createElement('div');
+                accountItem.className = 'account-item';
+                accountItem.innerHTML = `
+                    <span>${account.email}</span>
+                    <div>
+                        <button class="btn" onclick="selectAccount('${account.user_id}')">Select</button>
+                        <button onclick="removeAccount('${account.user_id}')">Remove</button>
+                    </div>
+                `;
+                accountList.appendChild(accountItem);
+            });
+        }
+
+        async function selectAccount(userId) {
+            currentAccount = userId;
+            hideAccountPanel();
+            showLoading('Loading photos...');
+            
+            try {
+                const response = await fetch(`/api/photos/${userId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                slides = data.mediaItems || [];
+                if (slides.length === 0) {
+                    showError('No photos found in this account');
+                    return;
+                }
+                
+                if (settings.shuffle) {
+                    shuffleSlides();
+                }
+                
+                startSlideshow();
+                document.getElementById('slideshowContainer').style.display = 'block';
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading photos:', error);
+                showError('Failed to load photos');
+            }
+        }
+
+        function startSlideshow() {
+            if (slides.length === 0) return;
+            
+            createSlides();
+            showSlide(0);
+            
+            if (isPlaying) {
+                slideInterval = setInterval(() => {
+                    nextSlide();
+                }, settings.speed * 1000);
+            }
+        }
+
+        function createSlides() {
+            const container = document.getElementById('slideshowContainer');
+            const existingSlides = container.querySelectorAll('.slide');
+            existingSlides.forEach(slide => slide.remove());
+            
+            slides.forEach((slide, index) => {
+                const slideElement = document.createElement('div');
+                slideElement.className = 'slide';
+                slideElement.id = `slide-${index}`;
+                
+                if (slide.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = slide.displayUrl;
+                    img.alt = slide.filename;
+                    slideElement.appendChild(img);
+                } else if (slide.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = slide.videoUrl;
+                    video.controls = false;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    slideElement.appendChild(video);
+                }
+                
+                container.insertBefore(slideElement, container.firstChild);
+            });
+        }
+
+        function showSlide(index) {
+            const slideElements = document.querySelectorAll('.slide');
+            slideElements.forEach(slide => slide.classList.remove('active'));
+            
+            if (slideElements[index]) {
+                slideElements[index].classList.add('active');
+                updateInfo(slides[index]);
+            }
+        }
+
+        function updateInfo(slide) {
+            document.getElementById('photoTitle').textContent = slide.filename;
+            document.getElementById('photoDate').textContent = new Date(slide.creationTime).toLocaleDateString();
+            document.getElementById('photoDescription').textContent = slide.description || 'No description';
+        }
+
+        function nextSlide() {
+            if (slides.length === 0) return;
+            
+            currentSlide++;
+            if (currentSlide >= slides.length) {
+                if (settings.repeat) {
+                    currentSlide = 0;
+                } else {
+                    currentSlide = slides.length - 1;
+                    togglePlayPause();
+                    return;
+                }
+            }
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            if (slides.length === 0) return;
+            
+            currentSlide--;
+            if (currentSlide < 0) {
+                currentSlide = settings.repeat ? slides.length - 1 : 0;
+            }
+            showSlide(currentSlide);
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playPauseBtn');
+            btn.textContent = isPlaying ? '⏸️' : '▶️';
+            
+            if (isPlaying) {
+                startSlideshow();
+            } else {
+                clearInterval(slideInterval);
+            }
+        }
+
+        function shuffleSlides() {
+            for (let i = slides.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [slides[i], slides[j]] = [slides[j], slides[i]];
+            }
+            currentSlide = 0;
+            createSlides();
+        }
+
+        function showSettings() {
+            document.getElementById('settingsPanel').classList.add('show');
+        }
+
+        function hideSettings() {
+            document.getElementById('settingsPanel').classList.remove('show');
+        }
+
+        function showInfo() {
+            settings.showInfo = !settings.showInfo;
+            document.getElementById('infoPanel').classList.toggle('show', settings.showInfo);
+            document.getElementById('showInfoCheckbox').checked = settings.showInfo;
+        }
+
+        function showAccountPanel() {
+            document.getElementById('accountPanel').style.display = 'block';
+            document.getElementById('slideshowContainer').style.display = 'none';
+            loadAccounts();
+        }
+
+        function hideAccountPanel() {
+            document.getElementById('accountPanel').style.display = 'none';
+            if (currentAccount) {
+                document.getElementById('slideshowContainer').style.display = 'block';
+            }
+        }
+
+        async function startAuth() {
+            try {
+                const response = await fetch('/api/auth/start', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                if (data.method === 'direct') {
+                    // Direct OAuth - redirect to Google
+                    window.location.href = data.auth_url;
+                } else {
+                    // Legacy device flow
+                    authSessionId = data.session_id;
+                    document.getElementById('authCode').textContent = data.user_code;
+                    document.getElementById('authUrl').textContent = data.verification_url;
+                    document.getElementById('authSection').style.display = 'block';
+                    
+                    startAuthProgress(data.expires_in);
+                    checkAuthStatus();
+                }
+                
+            } catch (error) {
+                console.error('Error starting auth:', error);
+                showError('Failed to start authentication');
+            }
+        }
+
+        function startAuthProgress(expiresIn) {
+            const progressFill = document.getElementById('progressFill');
+            const timeLeft = document.getElementById('timeLeft');
+            let timeRemaining = expiresIn;
+            
+            const progressInterval = setInterval(() => {
+                timeRemaining--;
+                const percentage = ((expiresIn - timeRemaining) / expiresIn) * 100;
+                progressFill.style.width = percentage + '%';
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timeLeft.textContent = `Time remaining: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(progressInterval);
+                    cancelAuth();
+                }
+            }, 1000);
+        }
+
+        function checkAuthStatus() {
+            if (!authSessionId) return;
+            
+            authCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/auth/check/${authSessionId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        clearInterval(authCheckInterval);
+                        showSuccess('Account added successfully!');
+                        document.getElementById('authSection').style.display = 'none';
+                        loadAccounts();
+                    } else if (data.status === 'expired') {
+                        clearInterval(authCheckInterval);
+                        showError('Authentication expired. Please try again.');
+                        document.getElementById('authSection').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error checking auth status:', error);
+                }
+            }, 2000);
+        }
+
+        function cancelAuth() {
+            if (authCheckInterval) {
+                clearInterval(authCheckInterval);
+            }
+            document.getElementById('authSection').style.display = 'none';
+            authSessionId = null;
+        }
+
+        async function removeAccount(userId) {
+            if (!confirm('Are you sure you want to remove this account?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/auth/remove/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Account removed successfully');
+                    loadAccounts();
+                } else {
+                    const data = await response.json();
+                    showError(data.error || 'Failed to remove account');
+                }
+            } catch (error) {
+                console.error('Error removing account:', error);
+                showError('Failed to remove account');
+            }
+        }
+
+        function showLoading(message) {
+            const loading = document.getElementById('loading');
+            loading.querySelector('p').textContent = message;
+            loading.classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showError(message) {
+            // Create a temporary error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.left = '50%';
+            errorDiv.style.transform = 'translateX(-50%)';
+            errorDiv.style.zIndex = '1000';
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(errorDiv);
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            // Create a temporary success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            successDiv.style.position = 'fixed';
+            successDiv.style.top = '20px';
+            successDiv.style.left = '50%';
+            successDiv.style.transform = 'translateX(-50%)';
+            successDiv.style.zIndex = '1000';
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(successDiv);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
