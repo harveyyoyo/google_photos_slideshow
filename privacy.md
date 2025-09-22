@@ -4,4 +4,4 @@ This app uses Google OAuth to access your Google Photos for display as a screens
 No data is stored, shared, or used for any other purpose.  
 Your credentials are kept on your device and never sent to any third party.
 
-If you have questions, contact: [your email]
+If you have questions, contact me
